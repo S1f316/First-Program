@@ -60,6 +60,9 @@ def index():
     if 'username' in session:
         username = session['username']
         user = User.query.filter_by(username=username).first()
+        if user is None:
+            session.clear()  # 清除无效的session
+            return redirect(url_for('login'))
         is_admin = user.login_type == 'admin'
         return render_template('dashboard.html', 
                             username=username,
