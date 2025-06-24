@@ -3,8 +3,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from datetime import datetime
 import os
+import sys
+import logging
 from dotenv import load_dotenv
 from models import db, User, Post, Comment, Like, Complaint, Todo
+
+# 设置日志记录
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 # 加载环境变量
 load_dotenv()
@@ -13,13 +22,30 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key')
 
 # 配置数据库
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    # 修复 Render 的 PostgreSQL URL
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    logging.info(f"Database URL configured: {database_url.split('@')[0]}@*****")
+else:
+    logging.error("No DATABASE_URL environment variable found!")
+    
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 初始化数据库
 db.init_app(app)
+
+@app.errorhandler(500)
+def internal_error(error):
+    logging.error(f"Internal Server Error: {error}")
+    return "Internal Server Error", 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    logging.error(f"Page Not Found: {error}")
+    return "Page Not Found", 404
 
 def login_required(f):
     @wraps(f)
@@ -381,20 +407,30 @@ def group_leader():
 
 # 创建数据库表
 def init_db():
-    with app.app_context():
-        db.create_all()
-        
-        # 检查是否需要创建管理员账户
-        admin = User.query.filter_by(username='S1f').first()
-        if not admin:
-            admin = User(
-                username='S1f',
-                password=generate_password_hash('yifan0316'),
-                login_type='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
+    try:
+        with app.app_context():
+            logging.info("Creating database tables...")
+            db.create_all()
+            
+            # 检查是否需要创建管理员账户
+            admin = User.query.filter_by(username='S1f').first()
+            if not admin:
+                logging.info("Creating admin user...")
+                admin = User(
+                    username='S1f',
+                    password=generate_password_hash('yifan0316'),
+                    login_type='admin'
+                )
+                db.session.add(admin)
+                db.session.commit()
+                logging.info("Admin user created successfully")
+            else:
+                logging.info("Admin user already exists")
+    except Exception as e:
+        logging.error(f"Error initializing database: {str(e)}")
+        raise
 
 if __name__ == '__main__':
     init_db()  # 初始化数据库
-    app.run(debug=True)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
