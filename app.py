@@ -13,6 +13,10 @@ if os.environ.get('FLASK_ENV') == 'production':
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30分钟session过期
 
+# 管理员账号设置
+ADMIN_USERNAME = 'yifanshen316@gmail.com'
+ADMIN_PASSWORD = generate_password_hash('yifan0316')
+
 USERS_FILE = 'users.json'
 # 如果 users.json 不存在，初始化一个空字典
 if not os.path.exists(USERS_FILE):
@@ -86,9 +90,8 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        users = load_users()
-        hash_pw = users.get(username)
-        if hash_pw and check_password_hash(hash_pw, password):
+        
+        if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD, password):
             session['username'] = username
             return redirect(url_for('index'))
         else:
