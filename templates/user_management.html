@@ -156,15 +156,15 @@
 
         <h2>预设用户列表</h2>
         <ul class="user-list">
-            {% for username, user_data in users.items() %}
+            {% for user in users %}
             <li class="user-item">
                 <div class="user-info">
-                    <strong>{{ username }}</strong><br>
-                    出生日期: {{ user_data.birthdate }}
+                    <strong>{{ user.username }}</strong><br>
+                    出生日期: {{ user.birthdate }}
                 </div>
                 <div class="user-actions">
-                    <a href="{{ url_for('view_user_todos', username=username) }}" class="view-btn">查看待办</a>
-                    <a href="{{ url_for('delete_user', username=username) }}" class="delete-btn" onclick="return confirm('确定要删除这个用户吗？')">删除</a>
+                    <a href="{{ url_for('view_user_todos', username=user.username) }}" class="view-btn">查看待办</a>
+                    <a href="{{ url_for('delete_user', username=user.username) }}" class="delete-btn" onclick="return confirm('确定要删除这个用户吗？')">删除</a>
                 </div>
             </li>
             {% endfor %}
