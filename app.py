@@ -33,9 +33,21 @@ else:
     logging.error("No DATABASE_URL environment variable found!")
     
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,  # 在每次连接前ping数据库
+    'pool_recycle': 300,    # 5分钟后回收连接
+}
 
 # 初始化数据库
-db.init_app(app)
+try:
+    db.init_app(app)
+    with app.app_context():
+        # 测试数据库连接
+        db.engine.connect()
+        logging.info("Successfully connected to the database!")
+except Exception as e:
+    logging.error(f"Database connection error: {str(e)}")
+    raise
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -59,14 +71,22 @@ def login_required(f):
 def index():
     if 'username' in session:
         username = session['username']
-        user = User.query.filter_by(username=username).first()
-        if user is None:
-            session.clear()  # 清除无效的session
+        logging.info(f"Attempting to fetch user data for: {username}")
+        try:
+            user = User.query.filter_by(username=username).first()
+            if user is None:
+                logging.warning(f"No user found for username: {username}")
+                session.clear()
+                return redirect(url_for('login'))
+            is_admin = user.login_type == 'admin'
+            logging.info(f"Successfully loaded user data. User type: {user.login_type}")
+            return render_template('dashboard.html', 
+                                username=username,
+                                is_admin=is_admin)
+        except Exception as e:
+            logging.error(f"Error fetching user data: {str(e)}")
+            session.clear()
             return redirect(url_for('login'))
-        is_admin = user.login_type == 'admin'
-        return render_template('dashboard.html', 
-                            username=username,
-                            is_admin=is_admin)
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -77,28 +97,43 @@ def login():
         username = request.form['username']
         password = request.form['password']
         
-        user = User.query.filter_by(username=username).first()
-        
-        if login_type == 'admin':
-            if user and user.login_type == 'admin':
-                if check_password_hash(user.password, password):
-                    session['username'] = username
-                    return redirect(url_for('index'))
-                else:
-                    message = '用户名或密码错误。'
+        logging.info(f"Login attempt for username: {username}, type: {login_type}")
+        try:
+            user = User.query.filter_by(username=username).first()
+            if user:
+                logging.info(f"User found, verifying credentials")
+                if login_type == 'admin':
+                    if user.login_type == 'admin':
+                        if check_password_hash(user.password, password):
+                            session['username'] = username
+                            logging.info(f"Admin login successful for: {username}")
+                            return redirect(url_for('index'))
+                        else:
+                            message = '用户名或密码错误。'
+                            logging.warning(f"Invalid password for admin: {username}")
+                    else:
+                        message = '用户名或密码错误。'
+                        logging.warning(f"Non-admin user attempting admin login: {username}")
+                
+                elif login_type == 'birth':
+                    birthdate = request.form['birthdate']
+                    if user.login_type == 'birth':
+                        if check_password_hash(user.password, password) and user.birthdate == birthdate:
+                            session['username'] = username
+                            logging.info(f"Birth user login successful for: {username}")
+                            return redirect(url_for('index'))
+                        else:
+                            message = '用户名、密码或出生日期不正确。'
+                            logging.warning(f"Invalid credentials for birth user: {username}")
+                    else:
+                        message = '此用户名未被预设，请联系管理员。'
+                        logging.warning(f"Invalid user type for birth login: {username}")
             else:
+                logging.warning(f"No user found for username: {username}")
                 message = '用户名或密码错误。'
-        
-        elif login_type == 'birth':
-            birthdate = request.form['birthdate']
-            if user and user.login_type == 'birth':
-                if check_password_hash(user.password, password) and user.birthdate == birthdate:
-                    session['username'] = username
-                    return redirect(url_for('index'))
-                else:
-                    message = '用户名、密码或出生日期不正确。'
-            else:
-                message = '此用户名未被预设，请联系管理员。'
+        except Exception as e:
+            logging.error(f"Database error during login: {str(e)}")
+            message = '系统错误，请稍后重试。'
     
     return render_template('login.html', message=message)
 
