@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+        .btn-back {
+            background: #6c757d;
+        }
+        .btn-back:hover {
+            background: #5a6268;
+        }
+        .user-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .submit-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background: #218838;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+        }
+        .user-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-info {
+            flex-grow: 1;
+        }
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        .view-btn {
+            background: #0d6efd;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .view-btn:hover {
+            background: #0b5ed7;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 用户管理</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-back">返回仪表盘</a>
+        </div>
+
+        {% if message %}
+        <div class="message {% if success %}success{% else %}error{% endif %}">
+            {{ message }}
+        </div>
+        {% endif %}
+
+        <div class="user-form">
+            <h2>创建新用户</h2>
+            <form method="post" action="{{ url_for('create_user') }}">
+                <div class="form-group">
+                    <label>用户名：</label>
+                    <input type="text" name="username" required placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码：</label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>出生日期：</label>
+                    <input type="date" name="birthdate" required>
+                </div>
+                <button type="submit" class="submit-btn">创建用户</button>
+            </form>
+        </div>
+
+        <h2>预设用户列表</h2>
+        <ul class="user-list">
+            {% for username, user_data in users.items() %}
+            <li class="user-item">
+                <div class="user-info">
+                    <strong>{{ username }}</strong><br>
+                    出生日期: {{ user_data.birthdate }}
+                </div>
+                <div class="user-actions">
+                    <a href="{{ url_for('view_user_todos', username=username) }}" class="view-btn">查看待办</a>
+                    <a href="{{ url_for('delete_user', username=username) }}" class="delete-btn" onclick="return confirm('确定要删除这个用户吗？')">删除</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html> 
