@@ -418,40 +418,78 @@ def group_leader():
 # API 端点
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.get_json()
-    login_type = data.get('login_type', 'birth')
-    username = data.get('username')
-    password = data.get('password')
-    birthdate = data.get('birthdate')
-    
-    user = User.query.filter_by(username=username).first()
-    
-    if not user:
-        return jsonify({'error': '用户不存在'}), 404
-        
-    if login_type == 'admin' and user.login_type == 'admin':
-        if check_password_hash(user.password, password):
+    try:
+        data = request.get_json()
+        if not data:
             return jsonify({
-                'token': 'temp-token',  # 这里应该生成真实的 JWT token
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'login_type': user.login_type
-                }
-            })
-    elif login_type == 'birth' and user.login_type == 'birth':
-        if check_password_hash(user.password, password) and user.birthdate == birthdate:
+                'success': False,
+                'message': '无效的请求数据'
+            }), 400
+
+        username = data.get('username')
+        password = data.get('password')
+        is_admin = data.get('is_admin', False)
+        birth_date = data.get('birth_date')
+
+        if not username or not password:
             return jsonify({
-                'token': 'temp-token',  # 这里应该生成真实的 JWT token
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'login_type': user.login_type,
-                    'birthdate': user.birthdate
-                }
-            })
-            
-    return jsonify({'error': '认证失败'}), 401
+                'success': False,
+                'message': '用户名和密码不能为空'
+            }), 400
+
+        user = User.query.filter_by(username=username).first()
+
+        if not user:
+            return jsonify({
+                'success': False,
+                'message': '用户不存在'
+            }), 401
+
+        if is_admin and user.login_type != 'admin':
+            return jsonify({
+                'success': False,
+                'message': '无管理员权限'
+            }), 401
+
+        if not is_admin and user.login_type != 'birth':
+            return jsonify({
+                'success': False,
+                'message': '无效的用户类型'
+            }), 401
+
+        if not check_password_hash(user.password, password):
+            return jsonify({
+                'success': False,
+                'message': '密码错误'
+            }), 401
+
+        if not is_admin and user.birthdate != birth_date:
+            return jsonify({
+                'success': False,
+                'message': '出生日期错误'
+            }), 401
+
+        # 生成 token（这里简单使用用户名作为 token，实际应使用 JWT）
+        token = username
+
+        return jsonify({
+            'success': True,
+            'message': '登录成功',
+            'token': token,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'birthDate': user.birthdate,
+                'isAdmin': user.login_type == 'admin'
+            }
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Login error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '服务器错误'
+        }), 500
 
 @app.route('/api/todos', methods=['GET'])
 def api_get_todos():
