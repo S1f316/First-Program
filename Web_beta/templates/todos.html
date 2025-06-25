@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>待办事项</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+        .btn-back {
+            background: #6c757d;
+        }
+        .btn-back:hover {
+            background: #5a6268;
+        }
+        .btn-logout {
+            background: #dc3545;
+        }
+        .btn-logout:hover {
+            background: #c82333;
+        }
+        .todo-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .todo-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .todo-icon {
+            font-size: 2em;
+            margin-right: 10px;
+        }
+        .todo-title {
+            font-size: 1.5em;
+            margin: 0;
+        }
+        .todo-form {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .todo-form input, .todo-form select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn-add {
+            background: #28a745;
+        }
+        .btn-add:hover {
+            background: #218838;
+        }
+        .btn-delete {
+            background: #dc3545;
+            padding: 4px 8px;
+            font-size: 0.9em;
+        }
+        .todo-lists {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .todo-category {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .urgent {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        .medium {
+            background-color: rgba(255, 193, 7, 0.1);
+        }
+        .low {
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+        .category-title {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid;
+        }
+        .urgent .category-title {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        .medium .category-title {
+            border-color: #ffc107;
+            color: #d39e00;
+        }
+        .low .category-title {
+            border-color: #28a745;
+            color: #28a745;
+        }
+        .todo-list {
+            list-style: none;
+            padding: 0;
+        }
+        .todo-item {
+            background: white;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .todo-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+        .todo-task {
+            font-weight: 500;
+        }
+        .todo-task.completed {
+            text-decoration: line-through;
+            color: #999;
+        }
+        .todo-date {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn-complete {
+            background: #28a745;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: transform 0.2s;
+        }
+        .btn-complete:hover {
+            transform: scale(1.1);
+        }
+        .btn-complete.completed {
+            background: #198754;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <a href="{{ url_for('index') }}" class="btn btn-back">返回仪表盘</a>
+            </div>
+            <h1>待办事项</h1>
+            <div class="header-right">
+                <a href="{{ url_for('logout') }}" class="btn btn-logout">退出登录</a>
+            </div>
+        </div>
+
+        <div class="todo-container">
+            <div class="todo-header">
+                <div class="todo-icon">📝</div>
+                <h2 class="todo-title">{{ username }} 的待办事项</h2>
+            </div>
+            
+            <form class="todo-form" method="post" action="{{ url_for('add_todo') }}">
+                <input type="text" name="task" placeholder="任务内容" required>
+                <input type="date" name="date" placeholder="选择日期（可选）">
+                <input type="time" name="time" placeholder="选择时间（可选）">
+                <select name="priority" required>
+                    <option value="urgent">紧急</option>
+                    <option value="medium">一般</option>
+                    <option value="low">普通</option>
+                </select>
+                <button type="submit" class="btn btn-add">添加</button>
+            </form>
+
+            <div class="todo-lists">
+                <div class="todo-category urgent">
+                    <h3 class="category-title">紧急任务</h3>
+                    <ul class="todo-list">
+                        {% for todo in todos %}
+                            {% if todo.priority == 'urgent' %}
+                            <li class="todo-item">
+                                <div class="todo-info">
+                                    <span class="todo-task {% if todo.completed %}completed{% endif %}">{{ todo.task }}</span>
+                                    {% if todo.date or todo.time %}
+                                    <span class="todo-date">
+                                        {% if todo.date %}{{ todo.date }}{% endif %}
+                                        {% if todo.time %}{{ todo.time }}{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="todo-actions">
+                                    <a href="{{ url_for('toggle_todo', todo_id=todo.id) }}" class="btn-complete {% if todo.completed %}completed{% endif %}" title="{% if todo.completed %}取消完成{% else %}标记完成{% endif %}">
+                                        ✓
+                                    </a>
+                                    <a href="{{ url_for('delete_todo', todo_id=todo.id) }}" class="btn btn-delete">删除</a>
+                                </div>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="todo-category medium">
+                    <h3 class="category-title">一般任务</h3>
+                    <ul class="todo-list">
+                        {% for todo in todos %}
+                            {% if todo.priority == 'medium' %}
+                            <li class="todo-item">
+                                <div class="todo-info">
+                                    <span class="todo-task {% if todo.completed %}completed{% endif %}">{{ todo.task }}</span>
+                                    {% if todo.date or todo.time %}
+                                    <span class="todo-date">
+                                        {% if todo.date %}{{ todo.date }}{% endif %}
+                                        {% if todo.time %}{{ todo.time }}{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="todo-actions">
+                                    <a href="{{ url_for('toggle_todo', todo_id=todo.id) }}" class="btn-complete {% if todo.completed %}completed{% endif %}" title="{% if todo.completed %}取消完成{% else %}标记完成{% endif %}">
+                                        ✓
+                                    </a>
+                                    <a href="{{ url_for('delete_todo', todo_id=todo.id) }}" class="btn btn-delete">删除</a>
+                                </div>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="todo-category low">
+                    <h3 class="category-title">普通任务</h3>
+                    <ul class="todo-list">
+                        {% for todo in todos %}
+                            {% if todo.priority == 'low' %}
+                            <li class="todo-item">
+                                <div class="todo-info">
+                                    <span class="todo-task {% if todo.completed %}completed{% endif %}">{{ todo.task }}</span>
+                                    {% if todo.date or todo.time %}
+                                    <span class="todo-date">
+                                        {% if todo.date %}{{ todo.date }}{% endif %}
+                                        {% if todo.time %}{{ todo.time }}{% endif %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="todo-actions">
+                                    <a href="{{ url_for('toggle_todo', todo_id=todo.id) }}" class="btn-complete {% if todo.completed %}completed{% endif %}" title="{% if todo.completed %}取消完成{% else %}标记完成{% endif %}">
+                                        ✓
+                                    </a>
+                                    <a href="{{ url_for('delete_todo', todo_id=todo.id) }}" class="btn btn-delete">删除</a>
+                                </div>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

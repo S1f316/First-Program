@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>仪表盘</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+        .btn-logout {
+            background: #dc3545;
+        }
+        .btn-logout:hover {
+            background: #c82333;
+        }
+        .dashboard-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-icon {
+            font-size: 2.5em;
+            margin-right: 20px;
+        }
+        .card-content {
+            flex: 1;
+        }
+        .card-title {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .card-description {
+            color: #666;
+            font-size: 1em;
+        }
+        .card-arrow {
+            font-size: 1.5em;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>欢迎, {{ username }}</h1>
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">退出登录</a>
+        </div>
+
+        <div class="dashboard-cards">
+            <a href="{{ url_for('group_leader') }}" class="card">
+                <div class="card-icon">👑</div>
+                <div class="card-content">
+                    <div class="card-title">谁是群主</div>
+                    <div class="card-description">投票选举群主，为群主点赞</div>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+
+            <a href="{{ url_for('todos') }}" class="card">
+                <div class="card-icon">📝</div>
+                <div class="card-content">
+                    <div class="card-title">待办事项</div>
+                    <div class="card-description">管理您的任务清单，按优先级分类查看和处理任务</div>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+
+            <a href="{{ url_for('forum') }}" class="card">
+                <div class="card-icon">💬</div>
+                <div class="card-content">
+                    <div class="card-title">我有话说</div>
+                    <div class="card-description">分享您的想法，与其他用户交流讨论</div>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+
+            {% if is_admin %}
+            <a href="{{ url_for('user_management') }}" class="card">
+                <div class="card-icon">👥</div>
+                <div class="card-content">
+                    <div class="card-title">用户管理</div>
+                    <div class="card-description">创建和管理用户账号，设置用户权限</div>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html> 
